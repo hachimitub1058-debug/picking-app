@@ -1,0 +1,1623 @@
+<title>ピッキングチェック</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ピッキング">
+<style>
+  :root{
+    --bg:#F5F3EE;
+    --surface:#FFFFFF;
+    --surface-2:#ECE8DE;
+    --border:#DDD7C8;
+    --text:#1D1B16;
+    --text-muted:#726C5E;
+    --accent:#2E6B73;
+    --accent-strong:#20505A;
+    --accent-soft:#DCEBEA;
+    --on-accent:#FAFBFA;
+    --done:#3E8557;
+    --done-soft:#E1F0E4;
+    --pending:#B9791E;
+    --pending-soft:#FBEEDA;
+    --danger:#B4483A;
+    --danger-soft:#F7E4E0;
+    --shadow:0 1px 2px rgba(29,27,22,.08), 0 4px 14px rgba(29,27,22,.07);
+    --font-ui:"Yu Gothic UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Roboto,"Segoe UI",sans-serif;
+    --font-mono:ui-monospace,"Cascadia Mono","SF Mono","Roboto Mono",Consolas,monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14181A;
+      --surface:#1C2224;
+      --surface-2:#242B2D;
+      --border:#343C3E;
+      --text:#ECE9E1;
+      --text-muted:#9C9A90;
+      --accent:#5CA7AE;
+      --accent-strong:#82C2C7;
+      --accent-soft:#1E3538;
+      --on-accent:#0E1516;
+      --done:#67BC81;
+      --done-soft:#1E3324;
+      --pending:#E3AD52;
+      --pending-soft:#3A2C14;
+      --danger:#E27B69;
+      --danger-soft:#3B211D;
+      --shadow:0 1px 2px rgba(0,0,0,.45), 0 4px 16px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14181A; --surface:#1C2224; --surface-2:#242B2D; --border:#343C3E;
+    --text:#ECE9E1; --text-muted:#9C9A90; --accent:#5CA7AE; --accent-strong:#82C2C7;
+    --accent-soft:#1E3538; --on-accent:#0E1516; --done:#67BC81; --done-soft:#1E3324;
+    --pending:#E3AD52; --pending-soft:#3A2C14; --danger:#E27B69; --danger-soft:#3B211D;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 4px 16px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#F5F3EE; --surface:#FFFFFF; --surface-2:#ECE8DE; --border:#DDD7C8;
+    --text:#1D1B16; --text-muted:#726C5E; --accent:#2E6B73; --accent-strong:#20505A;
+    --accent-soft:#DCEBEA; --on-accent:#FAFBFA; --done:#3E8557; --done-soft:#E1F0E4;
+    --pending:#B9791E; --pending-soft:#FBEEDA; --danger:#B4483A; --danger-soft:#F7E4E0;
+    --shadow:0 1px 2px rgba(29,27,22,.08), 0 4px 14px rgba(29,27,22,.07);
+    color-scheme: light;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-ui);
+    -webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  button{font-family:inherit; color:inherit;}
+  input{font-family:inherit; color:inherit;}
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  .app{max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg);}
+
+  /* ---- Header ---- */
+  .top{background:var(--bg); padding:14px 16px 10px; border-bottom:1px solid var(--border);}
+  .brand{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
+  .brand h1{font-size:15px; font-weight:700; letter-spacing:.04em; margin:0; text-transform:uppercase; color:var(--text-muted);}
+
+  /* ---- Tabs ---- */
+  .tabbar{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:10px; scrollbar-width:none;}
+  .tabbar::-webkit-scrollbar{display:none;}
+  .jobtab{display:flex; align-items:center; gap:6px; flex:none; max-width:170px; height:34px; padding:0 6px 0 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer; white-space:nowrap;}
+  .jobtab[aria-selected="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);}
+  .jobtab .jt-dot{width:8px; height:8px; border-radius:999px; flex:none;}
+  .jobtab .jt-label{overflow:hidden; text-overflow:ellipsis; max-width:118px;}
+  .jobtab .jt-close{display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:999px; flex:none;}
+  .jobtab .jt-close:hover{background:rgba(120,110,90,.18);}
+  .jobtab .jt-close svg{width:11px; height:11px;}
+  .jobtab-add{flex:none; width:34px; height:34px; border-radius:999px; border:1px dashed var(--border); background:transparent; display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;}
+  .jobtab-add svg{width:15px; height:15px;}
+
+  .listname-row{display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .listname{font-size:19px; font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .listmeta{font-size:12px; color:var(--text-muted); font-variant-numeric:tabular-nums;}
+  .iconbtn{display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:1px solid transparent; background:transparent; cursor:pointer; flex:none;}
+  .iconbtn:hover{background:var(--surface-2);}
+  .iconbtn svg{width:17px; height:17px;}
+  .rename-input{font-size:19px; font-weight:700; flex:1; min-width:0; border:1px solid var(--accent); border-radius:6px; padding:2px 6px; background:var(--surface); color:var(--text);}
+  .colordot{width:16px; height:16px; border-radius:999px; border:1px solid var(--border); display:block;}
+
+  .swatch{width:40px; height:40px; border-radius:999px; border:2px solid transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff;}
+  .swatch[aria-selected="true"]{border-color:var(--text);}
+  .swatch svg{width:16px; height:16px;}
+  .swatch.none{background:var(--surface-2); color:var(--text-muted); border:1px dashed var(--border);}
+
+  .switch{position:relative; width:44px; height:26px; flex:none;}
+  .switch input{opacity:0; width:100%; height:100%; position:absolute; margin:0; cursor:pointer; z-index:1;}
+  .switch .track{position:absolute; inset:0; background:var(--surface-2); border-radius:999px; border:1px solid var(--border); transition:background .15s ease;}
+  .switch input:checked ~ .track{background:var(--accent); border-color:var(--accent);}
+  .switch .thumb{position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:999px; background:var(--surface); box-shadow:var(--shadow); transition:transform .15s ease;}
+  .switch input:checked ~ .thumb{transform:translateX(18px);}
+  .setting-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;}
+  .setting-row .setting-label{font-size:14px; font-weight:600;}
+  .setting-hint{font-size:12px; color:var(--text-muted); margin:-10px 0 16px; line-height:1.5;}
+
+  .note-row{display:flex; align-items:center; gap:4px; margin-bottom:12px; min-height:26px;}
+  .note-text{flex:1; min-width:0; font-size:12.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note-text.placeholder{opacity:.65; font-style:italic;}
+  .note-input{flex:1; min-width:0; height:28px; border-radius:6px; border:1px solid var(--accent); padding:0 8px; background:var(--surface); color:var(--text); font-size:12.5px;}
+
+  .statscard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:var(--shadow);}
+  .progress-row{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+  .progress-pct{font-family:var(--font-mono); font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; min-width:64px; color:var(--accent-strong);}
+  .progress-track{flex:1; height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
+  .progress-fill{height:100%; border-radius:999px; background:var(--accent); transition:width .25s ease;}
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .stat{background:var(--surface-2); border-radius:10px; padding:8px 10px;}
+  .stat-label{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:3px;}
+  .stat-value{font-family:var(--font-mono); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .stat-value .slash{color:var(--text-muted); font-weight:400; margin:0 1px;}
+
+  .reset-link{background:none; border:none; padding:6px 2px 0; margin-top:6px; font-size:12px; color:var(--text-muted); text-decoration:underline; cursor:pointer;}
+  .reset-link:hover{color:var(--text);}
+
+  /* ---- Toolbar ---- */
+  .toolbar{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px;}
+  .toolbtn{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:58px; border-radius:11px; border:1px solid var(--border); background:var(--surface); cursor:pointer; box-shadow:var(--shadow);}
+  .toolbtn:hover{border-color:var(--accent);}
+  .toolbtn svg{width:18px; height:18px; color:var(--accent-strong);}
+  .toolbtn span{font-size:10.5px; font-weight:600; color:var(--text);}
+
+  /* ---- Search / filter ---- */
+  .filterbar{position:sticky; top:0; z-index:9; background:var(--bg); padding:10px 16px; display:flex; gap:8px; border-bottom:1px solid var(--border);}
+  .search-wrap{position:relative; flex:1;}
+  .search-wrap svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-muted);}
+  .search-input{width:100%; height:38px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); padding:0 10px 0 32px; font-size:14px;}
+  .search-input::placeholder{color:var(--text-muted);}
+  .filter-chips{display:flex; gap:6px; flex:none;}
+  .chip{height:38px; padding:0 12px; border-radius:9px; border:1px solid var(--border); background:var(--surface); font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer;}
+  .chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong);}
+
+  /* ---- List ---- */
+  .list-area{flex:1; padding:8px 16px 100px;}
+  .empty-state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:56px 20px; color:var(--text-muted);}
+  .empty-state svg{width:40px; height:40px; opacity:.5;}
+  .empty-state p{margin:0; font-size:13.5px; line-height:1.6; max-width:280px;}
+
+  .item{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--pending); border-radius:10px; padding:12px 10px; margin-top:8px; box-shadow:var(--shadow);}
+  .item.checked{border-left-color:var(--done); background:var(--done-soft);}
+  .item-tap{display:flex; align-items:center; gap:10px; flex:1; min-width:0; cursor:pointer; background:none; border:none; padding:0; text-align:left;}
+  .item-check{flex:none; width:24px; height:24px; border-radius:999px; border:2px solid var(--pending); display:flex; align-items:center; justify-content:center;}
+  .item.checked .item-check{border-color:var(--done); background:var(--done); color:var(--on-accent);}
+  .item-check svg{width:14px; height:14px; display:none;}
+  .item.checked .item-check svg{display:block;}
+  .item-name{flex:1; min-width:0; font-size:15px; font-weight:600; overflow-wrap:anywhere;}
+  .item.checked .item-name{color:var(--text-muted); text-decoration:line-through; text-decoration-color:var(--text-muted); font-weight:500;}
+  .item-qty{flex:none; font-family:var(--font-mono); font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; background:var(--surface-2); color:var(--text); padding:3px 8px; border-radius:999px;}
+  .item-del{flex:none; width:32px; height:32px; border-radius:8px; border:none; background:none; color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .item-del:hover{background:var(--danger-soft); color:var(--danger);}
+  .item-del svg{width:16px; height:16px;}
+
+  /* ---- Modal ---- */
+  .overlay{position:fixed; inset:0; background:rgba(20,20,18,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50; opacity:0; pointer-events:none; transition:opacity .18s ease;}
+  .overlay.open{opacity:1; pointer-events:auto;}
+  @media (min-width:560px){ .overlay{align-items:center;} }
+  .sheet{background:var(--surface); width:100%; max-width:480px; border-radius:16px 16px 0 0; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); box-shadow:0 -4px 24px rgba(0,0,0,.2); max-height:82vh; overflow-y:auto; transform:translateY(12px); transition:transform .18s ease;}
+  .overlay.open .sheet{transform:translateY(0);}
+  @media (min-width:560px){ .sheet{border-radius:16px; max-height:80vh;} }
+  .sheet h2{font-size:16px; margin:0 0 4px; font-weight:700;}
+  .sheet .sub{font-size:12.5px; color:var(--text-muted); margin:0 0 14px;}
+  .field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .field label{font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted);}
+  .field input{height:42px; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); padding:0 11px; font-size:15px;}
+  .row2{display:flex; gap:10px;}
+  .row2 .field:first-child{flex:1;}
+  .row2 .field:last-child{width:88px;}
+  .sheet-actions{display:flex; gap:8px; margin-top:6px;}
+  .sheet-actions.stack{flex-direction:column;}
+  .btn{flex:1; height:44px; border-radius:9px; border:1px solid var(--border); background:var(--surface); font-size:14px; font-weight:700; cursor:pointer;}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent);}
+  .btn.danger{background:var(--danger); border-color:var(--danger); color:var(--on-accent);}
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .tabs{display:flex; gap:4px; background:var(--surface-2); border-radius:9px; padding:3px; margin-bottom:14px;}
+  .tab{flex:1; height:34px; border:none; background:transparent; border-radius:7px; font-size:13px; font-weight:700; color:var(--text-muted); cursor:pointer;}
+  .tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+
+  .card-item{border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+  .card-item .ci-top{display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:2px;}
+  .card-item .ci-name{font-weight:700; font-size:14px;}
+  .card-item .ci-date{font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums; flex:none;}
+  .card-item .ci-sub{font-size:12px; color:var(--text-muted); margin-bottom:8px;}
+  .card-item .ci-actions{display:flex; gap:6px;}
+  .card-item .ci-actions button{height:32px; padding:0 12px; font-size:12px;}
+
+  .trash-item{display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:8px;}
+  .trash-item .ti-name{flex:1; min-width:0; font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .trash-item .ti-date{font-size:10.5px; color:var(--text-muted); flex:none;}
+  .trash-item .ti-actions{display:flex; gap:4px; flex:none;}
+  .trash-item .ti-actions button{height:28px; padding:0 8px; font-size:11.5px;}
+  .muted-empty{font-size:12.5px; color:var(--text-muted); text-align:center; padding:24px 0;}
+
+  .confirm-text{font-size:14px; line-height:1.6; margin:0 0 16px;}
+
+  .toast{position:fixed; left:50%; bottom:18px; transform:translate(-50%,0); background:var(--text); color:var(--bg); padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow); z-index:60; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; max-width:88vw;}
+  .toast.show{opacity:1; transform:translate(-50%,-4px); pointer-events:auto;}
+  .toast button{background:none; border:none; color:var(--accent-strong); font-weight:700; font-size:13px; cursor:pointer; flex:none;}
+
+  .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+</style>
+
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <h1>ピッキングチェック</h1>
+      <button class="iconbtn" id="settingsBtn" aria-label="設定" title="設定"></button>
+    </div>
+
+    <div class="tabbar" id="tabbar"></div>
+
+    <div class="listname-row" id="listnameRow">
+      <div class="listname" id="listnameText">リスト</div>
+      <div class="listmeta" id="listmetaText"></div>
+      <button class="iconbtn" id="colorPickBtn" aria-label="タブの色" title="タブの色"></button>
+      <button class="iconbtn" id="renameBtn" aria-label="リスト名を編集" title="リスト名を編集"></button>
+    </div>
+    <div class="note-row" id="noteRow">
+      <span class="note-text" id="noteText"></span>
+      <button class="iconbtn" id="noteEditBtn" aria-label="備考を編集" title="備考を編集"></button>
+    </div>
+
+    <div class="statscard">
+      <div class="progress-row">
+        <div class="progress-pct" id="progressPct">0%</div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="stat-label">完了</div>
+          <div class="stat-value" id="statDone">0<span class="slash">/</span>0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">残り</div>
+          <div class="stat-value" id="statRemain">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">数量</div>
+          <div class="stat-value" id="statQty">0<span class="slash">/</span>0</div>
+        </div>
+      </div>
+      <button class="reset-link" id="resetLink">すべて未完了に戻す</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="toolbtn" id="btnImport"></button>
+      <button class="toolbtn" id="btnAdd"></button>
+      <button class="toolbtn" id="btnSet"></button>
+      <button class="toolbtn" id="btnHistory"></button>
+    </div>
+    <input type="file" id="csvFile" accept=".csv,text/csv" class="visually-hidden">
+  </div>
+
+  <div class="filterbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input class="search-input" id="searchInput" placeholder="商品名で検索" type="text">
+    </div>
+    <div class="filter-chips">
+      <button class="chip" data-filter="all" aria-pressed="true">全部</button>
+      <button class="chip" data-filter="pending" aria-pressed="false">未</button>
+      <button class="chip" data-filter="done" aria-pressed="false">済</button>
+    </div>
+  </div>
+
+  <div class="list-area" id="listArea"></div>
+</div>
+
+<!-- 手動追加シート -->
+<div class="overlay" id="addOverlay">
+  <div class="sheet">
+    <h2>荷物を追加</h2>
+    <p class="sub">品名と数量を入力してください。追加後も入力欄は残るので連続で登録できます。</p>
+    <div class="row2">
+      <div class="field">
+        <label for="addName">品名</label>
+        <input id="addName" type="text" placeholder="例: 段ボール A-12" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="addQty">数量</label>
+        <input id="addQty" type="number" min="1" value="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="addCloseBtn">閉じる</button>
+      <button class="btn primary" id="addSubmitBtn">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新しいタブ -->
+<div class="overlay" id="newJobOverlay">
+  <div class="sheet">
+    <h2>新しいタブを追加</h2>
+    <p class="sub">セットから始めるか、空のリストを追加できます。</p>
+    <div class="sheet-actions stack">
+      <button class="btn primary" id="newJobFromSetBtn">セットから選ぶ</button>
+      <button class="btn" id="newJobEmptyBtn">空のリストを追加</button>
+      <button class="btn ghost" id="newJobCancelBtn">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- セットライブラリ -->
+<div class="overlay" id="setOverlay">
+  <div class="sheet">
+    <h2>セット</h2>
+    <p class="sub">セットを選ぶと新しい作業タブが開きます。CSVで一括登録・更新もできます（同じセット名は上書き更新されます）。</p>
+    <div class="sheet-actions" style="margin-bottom:14px;">
+      <button class="btn primary" id="setCsvImportBtn">CSVで一括登録</button>
+      <button class="btn" id="setCreateBtn">新しいセットを追加</button>
+    </div>
+    <div id="setListPanel"></div>
+    <input type="file" id="setCsvFile" accept=".csv,text/csv" class="visually-hidden">
+    <div class="sheet-actions">
+      <button class="btn ghost" id="setCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- セットの中身を編集 -->
+<div class="overlay" id="setEditOverlay">
+  <div class="sheet">
+    <div class="listname-row" id="setEditNameRow" style="margin-bottom:14px;">
+      <div class="listname" id="setEditNameText" style="font-size:17px;"></div>
+      <button class="iconbtn" id="setEditRenameBtn"></button>
+    </div>
+    <div id="setEditItemsPanel"></div>
+    <div class="row2" style="margin-top:10px;">
+      <div class="field">
+        <label for="setEditItemName">品名</label>
+        <input id="setEditItemName" type="text" placeholder="品名" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="setEditItemQty">数量</label>
+        <input id="setEditItemQty" type="number" min="1" value="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="sheet-actions" style="margin-bottom:10px;">
+      <button class="btn primary" id="setEditAddItemBtn">品目を追加</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="setEditCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- セットから作業開始 -->
+<div class="overlay" id="setStartOverlay">
+  <div class="sheet">
+    <h2>作業を開始</h2>
+    <p class="sub" id="setStartSummary"></p>
+    <div class="field">
+      <label for="setStartNote">備考（任意）</label>
+      <input id="setStartNote" type="text" placeholder="例: 〇〇様" autocomplete="off">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="setStartCancelBtn">キャンセル</button>
+      <button class="btn primary" id="setStartConfirmBtn">開始する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 履歴・ゴミ箱シート -->
+<div class="overlay" id="historyOverlay">
+  <div class="sheet">
+    <h2>履歴・ゴミ箱</h2>
+    <p class="sub">閉じたタブの履歴と、削除した荷物を確認・復元できます。</p>
+    <div class="tabs">
+      <button class="tab" id="tabHistoryBtn" aria-selected="true">履歴</button>
+      <button class="tab" id="tabTrashBtn" aria-selected="false">ゴミ箱</button>
+      <button class="tab" id="tabBackupBtn" aria-selected="false">バックアップ</button>
+    </div>
+    <div class="tabpanel active" id="tabHistoryPanel"></div>
+    <div class="tabpanel" id="tabTrashPanel"></div>
+    <div class="tabpanel" id="tabBackupPanel">
+      <p class="sub">他の端末とデータをやり取りするには、バックアップファイル(JSON)を書き出して、AirDropやiCloud Drive、LINEなどで送り、もう一方の端末で読み込んでください。読み込んでも今の端末のデータは消えず、追加・更新される形で反映されます。</p>
+      <div class="sheet-actions stack">
+        <button class="btn primary" id="backupExportBtn">バックアップを書き出す</button>
+        <button class="btn" id="backupImportBtn">バックアップを読み込む</button>
+      </div>
+      <input type="file" id="backupFile" accept=".json,application/json" class="visually-hidden">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="historyCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 汎用確認モーダル -->
+<div class="overlay" id="confirmOverlay">
+  <div class="sheet">
+    <h2 id="confirmTitle">確認</h2>
+    <p class="confirm-text" id="confirmText"></p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="confirmCancelBtn">キャンセル</button>
+      <button class="btn danger" id="confirmOkBtn">実行する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h2>設定</h2>
+    <div class="setting-row">
+      <span class="setting-label">チェック時に振動</span>
+      <label class="switch">
+        <input type="checkbox" id="vibrateToggle">
+        <span class="track"></span>
+        <span class="thumb"></span>
+      </label>
+    </div>
+    <p class="setting-hint">iPhone(Safari)は仕組み上バイブレーションに対応していないため、iPhoneでは振動しません。Androidなど対応端末でのみ動作します。</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="settingsCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- タブの色 -->
+<div class="overlay" id="colorOverlay">
+  <div class="sheet">
+    <h2>タブの色</h2>
+    <p class="sub">見分けやすいように、このタブに色を付けられます。</p>
+    <div id="colorSwatches" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="colorCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+  <button id="toastUndoBtn">元に戻す</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- app icon (drawn on canvas, no external image) ---------------- */
+  function drawRoundedRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  function generateAppIconDataUrl(size){
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    drawRoundedRect(ctx, 0, 0, size, size, size * 0.225);
+    const grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#2E6B73');
+    grad.addColorStop(1, '#1B4A50');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    const cardSize = size * 0.5;
+    const cardPos = size * 0.25;
+    drawRoundedRect(ctx, cardPos, cardPos, cardSize, cardSize, size * 0.11);
+    ctx.strokeStyle = '#F5F3EE';
+    ctx.lineWidth = size * 0.055;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    ctx.strokeStyle = '#F5F3EE';
+    ctx.lineWidth = size * 0.065;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(size * 0.345, size * 0.515);
+    ctx.lineTo(size * 0.455, size * 0.625);
+    ctx.lineTo(size * 0.675, size * 0.385);
+    ctx.stroke();
+
+    return canvas.toDataURL('image/png');
+  }
+
+  function injectAppIcon(){
+    try{
+      const appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      appleLink.setAttribute('sizes', '180x180');
+      appleLink.href = generateAppIconDataUrl(180);
+      document.head.appendChild(appleLink);
+
+      const iconLink = document.createElement('link');
+      iconLink.rel = 'icon';
+      iconLink.type = 'image/png';
+      iconLink.setAttribute('sizes', '192x192');
+      iconLink.href = generateAppIconDataUrl(192);
+      document.head.appendChild(iconLink);
+    }catch(e){ /* canvas unavailable: home screen icon falls back to a page screenshot */ }
+  }
+  injectAppIcon();
+
+  /* ---------------- icons ---------------- */
+  const ICONS = {
+    upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l4 2"/></svg>',
+    pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14"/></svg>',
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>',
+    layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
+    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
+  };
+  const TAB_COLORS = ['#B4483A','#C9752E','#B99A2E','#4C8C4A','#2E6B73','#3B6FA6','#7A4FB0','#B0507B'];
+  document.getElementById('renameBtn').innerHTML = ICONS.pencil;
+  document.getElementById('noteEditBtn').innerHTML = ICONS.pencil;
+  document.getElementById('settingsBtn').innerHTML = ICONS.gear;
+  document.getElementById('btnImport').innerHTML = ICONS.upload + '<span>CSV取込</span>';
+  document.getElementById('btnAdd').innerHTML = ICONS.plus + '<span>手動追加</span>';
+  document.getElementById('btnSet').innerHTML = ICONS.layers + '<span>セット</span>';
+  document.getElementById('btnHistory').innerHTML = ICONS.history + '<span>履歴/ゴミ箱</span>';
+
+  /* ---------------- state ---------------- */
+  const STORAGE_KEY_V2 = 'pickingAppState_v2';
+  const STORAGE_KEY_V1 = 'pickingAppState_v1';
+  const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+
+  function createEmptyJob(name){
+    return { id: uid(), name: name || '新しいリスト', note: '', color: null, createdAt: Date.now(), items: [] };
+  }
+
+  function loadState(){
+    try{
+      const rawV2 = localStorage.getItem(STORAGE_KEY_V2);
+      if(rawV2){
+        const parsed = JSON.parse(rawV2);
+        parsed.jobs = parsed.jobs || [];
+        parsed.setLibrary = parsed.setLibrary || [];
+        parsed.history = parsed.history || [];
+        parsed.trash = parsed.trash || [];
+        parsed.settings = parsed.settings || { vibration: true };
+        if(typeof parsed.settings.vibration !== 'boolean') parsed.settings.vibration = true;
+        parsed.jobs.forEach(j => { if(j.color === undefined) j.color = null; });
+        if(parsed.jobs.length === 0) parsed.jobs.push(createEmptyJob('本日のピッキング'));
+        if(!parsed.activeJobId || !parsed.jobs.some(j => j.id === parsed.activeJobId)){
+          parsed.activeJobId = parsed.jobs[0].id;
+        }
+        return parsed;
+      }
+      const rawV1 = localStorage.getItem(STORAGE_KEY_V1);
+      if(rawV1){
+        const v1 = JSON.parse(rawV1);
+        const job = {
+          id: v1.currentList.id, name: v1.currentList.name, note: '', color: null,
+          createdAt: v1.currentList.createdAt, items: v1.currentList.items || []
+        };
+        const history = (v1.history || []).map(h => ({ id: h.id, name: h.name, note: '', color: null, createdAt: h.createdAt, archivedAt: h.archivedAt, items: h.items || [] }));
+        const trash = (v1.trash || []).map(t => ({ ...t, fromJobId: null, fromJobName: t.fromListName || '' }));
+        return { jobs: [job], activeJobId: job.id, setLibrary: [], history, trash, settings: { vibration: true } };
+      }
+    }catch(e){ /* fall through to default */ }
+    const job = createEmptyJob('本日のピッキング');
+    return { jobs: [job], activeJobId: job.id, setLibrary: [], history: [], trash: [], settings: { vibration: true } };
+  }
+
+  let state = loadState();
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
+  }
+  function activeJob(){
+    return state.jobs.find(j => j.id === state.activeJobId) || state.jobs[0];
+  }
+
+  /* ---------------- helpers ---------------- */
+  function fmtDate(ts){
+    const d = new Date(ts);
+    return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0')
+      + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* ---------------- render ---------------- */
+  let filterMode = 'all';
+  let searchTerm = '';
+
+  function render(){
+    renderTabs();
+    renderHeader();
+    renderStats();
+    renderList();
+  }
+
+  function renderTabs(){
+    const bar = document.getElementById('tabbar');
+    bar.innerHTML = state.jobs.map(j => {
+      const label = j.note ? (j.name + '・' + j.note) : j.name;
+      const dot = j.color ? `<span class="jt-dot" style="background:${j.color};"></span>` : '';
+      return `<button class="jobtab" data-jobtab="${j.id}" aria-selected="${j.id === state.activeJobId}">
+        ${dot}
+        <span class="jt-label">${escapeHtml(label)}</span>
+        <span class="jt-close" data-jobclose="${j.id}">${ICONS.x}</span>
+      </button>`;
+    }).join('') + `<button class="jobtab-add" id="jobtabAddBtn" aria-label="新しいタブを追加">${ICONS.plus}</button>`;
+  }
+
+  document.getElementById('tabbar').addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('[data-jobclose]');
+    if(closeBtn){ closeJob(closeBtn.getAttribute('data-jobclose')); return; }
+    const addBtn = e.target.closest('#jobtabAddBtn');
+    if(addBtn){ openOverlay(document.getElementById('newJobOverlay')); return; }
+    const tab = e.target.closest('[data-jobtab]');
+    if(tab){
+      state.activeJobId = tab.getAttribute('data-jobtab');
+      saveState();
+      render();
+    }
+  });
+
+  function closeJob(id){
+    const job = state.jobs.find(j => j.id === id);
+    if(!job) return;
+    showConfirm('タブを閉じる', '「' + job.name + '」を閉じます。作業内容は履歴に保存され、後で復元できます。よろしいですか？', () => {
+      state.history.unshift({ id: job.id, name: job.name, note: job.note, color: job.color || null, createdAt: job.createdAt, archivedAt: Date.now(), items: job.items });
+      state.jobs = state.jobs.filter(j => j.id !== id);
+      if(state.jobs.length === 0){
+        const nj = createEmptyJob('本日のピッキング');
+        state.jobs.push(nj);
+        state.activeJobId = nj.id;
+      } else if(state.activeJobId === id){
+        state.activeJobId = state.jobs[0].id;
+      }
+      saveState();
+      render();
+    });
+  }
+
+  function renderHeader(){
+    const job = activeJob();
+    document.getElementById('listnameText').textContent = job.name;
+    document.getElementById('listmetaText').textContent = fmtDate(job.createdAt) + ' 作成';
+    renderNoteRow();
+    renderColorDot();
+  }
+
+  function renderColorDot(){
+    const dot = document.getElementById('colorDotIndicator');
+    if(!dot) return;
+    dot.style.background = activeJob().color || 'transparent';
+  }
+
+  function setupColorPickBtn(){
+    const btn = document.getElementById('colorPickBtn');
+    if(!btn) return;
+    btn.innerHTML = '<span class="colordot" id="colorDotIndicator"></span>';
+    btn.addEventListener('click', () => {
+      renderColorSwatches();
+      openOverlay(document.getElementById('colorOverlay'));
+    });
+    renderColorDot();
+  }
+
+  function renderNoteRow(){
+    const job = activeJob();
+    const noteText = document.getElementById('noteText');
+    if(!noteText) return;
+    if(job.note){
+      noteText.textContent = job.note;
+      noteText.classList.remove('placeholder');
+    } else {
+      noteText.textContent = '備考を追加（例: 〇〇様）';
+      noteText.classList.add('placeholder');
+    }
+  }
+
+  function renderStats(){
+    const items = activeJob().items;
+    const total = items.length;
+    const done = items.filter(i => i.checked).length;
+    const remain = total - done;
+    const pct = total === 0 ? 0 : Math.round((done/total)*100);
+    const qtyTotal = items.reduce((s,i) => s + i.qty, 0);
+    const qtyDone = items.filter(i=>i.checked).reduce((s,i) => s + i.qty, 0);
+
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('statDone').innerHTML = done + '<span class="slash">/</span>' + total;
+    document.getElementById('statRemain').textContent = remain;
+    document.getElementById('statQty').innerHTML = qtyDone + '<span class="slash">/</span>' + qtyTotal;
+  }
+
+  function renderList(){
+    const listArea = document.getElementById('listArea');
+    const items = activeJob().items;
+    let visible = items.slice();
+    if(filterMode === 'pending') visible = visible.filter(i => !i.checked);
+    if(filterMode === 'done') visible = visible.filter(i => i.checked);
+    if(searchTerm.trim()) visible = visible.filter(i => i.name.toLowerCase().includes(searchTerm.trim().toLowerCase()));
+    visible.sort((a, b) => (a.checked === b.checked) ? 0 : (a.checked ? 1 : -1));
+
+    if(items.length === 0){
+      listArea.innerHTML = '<div class="empty-state">' + ICONS.box +
+        '<p>まだ荷物がありません。CSVを取り込むか、「手動追加」「セット」から登録してください。</p></div>';
+      return;
+    }
+    if(visible.length === 0){
+      listArea.innerHTML = '<div class="empty-state">' + ICONS.box + '<p>条件に一致する荷物がありません。</p></div>';
+      return;
+    }
+
+    listArea.innerHTML = visible.map(item => `
+      <div class="item ${item.checked ? 'checked' : ''}" data-id="${item.id}">
+        <button class="item-tap" data-action="toggle" data-id="${item.id}">
+          <span class="item-check">${ICONS.check}</span>
+          <span class="item-name">${escapeHtml(item.name)}</span>
+        </button>
+        <span class="item-qty">×${item.qty}</span>
+        <button class="item-del" data-action="delete" data-id="${item.id}" aria-label="削除">${ICONS.trash}</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('listArea').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    if(btn.getAttribute('data-action') === 'toggle') toggleItem(id);
+    if(btn.getAttribute('data-action') === 'delete') deleteItem(id);
+  });
+
+  function toggleItem(id){
+    const item = activeJob().items.find(i => i.id === id);
+    if(!item) return;
+    item.checked = !item.checked;
+    item.checkedAt = item.checked ? Date.now() : null;
+    saveState();
+    render();
+    if(state.settings.vibration && navigator.vibrate){ navigator.vibrate(15); }
+  }
+
+  function deleteItem(id){
+    const job = activeJob();
+    const idx = job.items.findIndex(i => i.id === id);
+    if(idx === -1) return;
+    const [removed] = job.items.splice(idx, 1);
+    const trashEntry = { ...removed, deletedAt: Date.now(), fromJobId: job.id, fromJobName: job.name };
+    state.trash.unshift(trashEntry);
+    saveState();
+    render();
+    showToast('「' + removed.name + '」を削除しました', () => {
+      const tIdx = state.trash.indexOf(trashEntry);
+      if(tIdx !== -1) state.trash.splice(tIdx, 1);
+      job.items.splice(Math.min(idx, job.items.length), 0, removed);
+      saveState();
+      render();
+    });
+  }
+
+  /* ---------------- filter / search ---------------- */
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterMode = chip.getAttribute('data-filter');
+      document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'));
+      renderList();
+    });
+  });
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    searchTerm = e.target.value;
+    renderList();
+  });
+
+  /* ---------------- reset (uncheck all) ---------------- */
+  document.getElementById('resetLink').addEventListener('click', () => {
+    const job = activeJob();
+    if(job.items.length === 0) return;
+    showConfirm('すべて未完了に戻す', 'このリストの全項目を未完了の状態に戻します。よろしいですか？', () => {
+      job.items.forEach(i => { i.checked = false; i.checkedAt = null; });
+      saveState();
+      render();
+    });
+  });
+
+  /* ---------------- rename ---------------- */
+  function startRename(){
+    const row = document.getElementById('listnameRow');
+    const job = activeJob();
+    const current = job.name;
+    row.innerHTML = `
+      <input class="rename-input" id="renameInput" type="text" value="${escapeHtml(current)}">
+      <button class="iconbtn" id="renameSaveBtn">${ICONS.check}</button>
+    `;
+    const input = document.getElementById('renameInput');
+    input.focus();
+    input.select();
+    function commit(){
+      const v = input.value.trim();
+      job.name = v || current;
+      saveState();
+      restoreRow();
+    }
+    function restoreRow(){
+      row.innerHTML = `
+        <div class="listname" id="listnameText"></div>
+        <div class="listmeta" id="listmetaText"></div>
+        <button class="iconbtn" id="colorPickBtn" aria-label="タブの色" title="タブの色"></button>
+        <button class="iconbtn" id="renameBtn" aria-label="リスト名を編集" title="リスト名を編集">${ICONS.pencil}</button>
+      `;
+      setupColorPickBtn();
+      renderHeader();
+      renderTabs();
+      document.getElementById('renameBtn').addEventListener('click', startRename);
+    }
+    document.getElementById('renameSaveBtn').addEventListener('click', commit);
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter') commit(); });
+  }
+  document.getElementById('renameBtn').addEventListener('click', startRename);
+
+  /* ---------------- note edit ---------------- */
+  function startNoteEdit(){
+    const row = document.getElementById('noteRow');
+    const job = activeJob();
+    const current = job.note || '';
+    row.innerHTML = `
+      <input class="note-input" id="noteInput" type="text" placeholder="例: 〇〇様" value="${escapeHtml(current)}">
+      <button class="iconbtn" id="noteSaveBtn">${ICONS.check}</button>
+    `;
+    const input = document.getElementById('noteInput');
+    input.focus();
+    input.select();
+    function commit(){
+      job.note = input.value.trim();
+      saveState();
+      restoreRow();
+    }
+    function restoreRow(){
+      row.innerHTML = `
+        <span class="note-text" id="noteText"></span>
+        <button class="iconbtn" id="noteEditBtn" aria-label="備考を編集" title="備考を編集">${ICONS.pencil}</button>
+      `;
+      renderNoteRow();
+      renderTabs();
+      document.getElementById('noteEditBtn').addEventListener('click', startNoteEdit);
+    }
+    document.getElementById('noteSaveBtn').addEventListener('click', commit);
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter') commit(); });
+  }
+  document.getElementById('noteEditBtn').addEventListener('click', startNoteEdit);
+  setupColorPickBtn();
+
+  /* ---------------- tab color ---------------- */
+  const colorOverlay = document.getElementById('colorOverlay');
+  function renderColorSwatches(){
+    const job = activeJob();
+    const panel = document.getElementById('colorSwatches');
+    let html = `<button class="swatch none" data-color="" aria-selected="${job.color ? 'false' : 'true'}">${ICONS.x}</button>`;
+    html += TAB_COLORS.map(c => `<button class="swatch" data-color="${c}" style="background:${c};" aria-selected="${job.color === c}">${job.color === c ? ICONS.check : ''}</button>`).join('');
+    panel.innerHTML = html;
+  }
+  document.getElementById('colorSwatches').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-color]');
+    if(!btn) return;
+    const color = btn.getAttribute('data-color');
+    activeJob().color = color || null;
+    saveState();
+    renderColorSwatches();
+    renderTabs();
+    renderColorDot();
+  });
+  document.getElementById('colorCloseBtn').addEventListener('click', () => closeOverlay(colorOverlay));
+
+  /* ---------------- settings ---------------- */
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    document.getElementById('vibrateToggle').checked = !!state.settings.vibration;
+    openOverlay(settingsOverlay);
+  });
+  document.getElementById('settingsCloseBtn').addEventListener('click', () => closeOverlay(settingsOverlay));
+  document.getElementById('vibrateToggle').addEventListener('change', (e) => {
+    state.settings.vibration = e.target.checked;
+    saveState();
+  });
+
+  /* ---------------- manual add ---------------- */
+  const addOverlay = document.getElementById('addOverlay');
+  document.getElementById('btnAdd').addEventListener('click', () => {
+    openOverlay(addOverlay);
+    document.getElementById('addName').focus();
+  });
+  document.getElementById('addCloseBtn').addEventListener('click', () => closeOverlay(addOverlay));
+  function submitAdd(){
+    const nameEl = document.getElementById('addName');
+    const qtyEl = document.getElementById('addQty');
+    const name = nameEl.value.trim();
+    if(!name){ nameEl.focus(); return; }
+    let qty = parseInt(qtyEl.value, 10);
+    if(isNaN(qty) || qty <= 0) qty = 1;
+    activeJob().items.push({ id: uid(), name, qty, checked: false, checkedAt: null });
+    saveState();
+    render();
+    nameEl.value = '';
+    qtyEl.value = '1';
+    nameEl.focus();
+  }
+  document.getElementById('addSubmitBtn').addEventListener('click', submitAdd);
+  document.getElementById('addName').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitAdd(); });
+  document.getElementById('addQty').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitAdd(); });
+
+  /* ---------------- new tab ---------------- */
+  const newJobOverlay = document.getElementById('newJobOverlay');
+  document.getElementById('newJobFromSetBtn').addEventListener('click', () => {
+    closeOverlay(newJobOverlay);
+    renderSetListPanel();
+    openOverlay(document.getElementById('setOverlay'));
+  });
+  document.getElementById('newJobEmptyBtn').addEventListener('click', () => {
+    const job = createEmptyJob('新しいリスト');
+    state.jobs.push(job);
+    state.activeJobId = job.id;
+    saveState();
+    render();
+    closeOverlay(newJobOverlay);
+  });
+  document.getElementById('newJobCancelBtn').addEventListener('click', () => closeOverlay(newJobOverlay));
+
+  /* ---------------- CSV: single-item import (appends to active tab) ---------------- */
+  const csvFile = document.getElementById('csvFile');
+  document.getElementById('btnImport').addEventListener('click', () => csvFile.click());
+  csvFile.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    csvFile.value = '';
+    if(!file) return;
+    try{
+      const items = await parseItemCsvFile(file);
+      if(items.length === 0){
+        showConfirm('取り込みエラー', 'CSVから荷物データを読み取れませんでした。1列目に品名、2列目に数量（任意）の形式で保存してください。', () => {}, true);
+        return;
+      }
+      const job = activeJob();
+      items.forEach(it => job.items.push({ id: uid(), name: it.name, qty: it.qty, checked: false, checkedAt: null }));
+      saveState();
+      render();
+      showToast(items.length + '件を「' + job.name + '」に追加しました');
+    }catch(err){
+      showConfirm('取り込みエラー', 'CSVの読み込み中にエラーが発生しました。ファイル形式をご確認ください。', () => {}, true);
+    }
+  });
+
+  /* ---------------- CSV parsing (shared) ---------------- */
+  function parseCsvLine(line){
+    const result = [];
+    let cur = '';
+    let inQuotes = false;
+    for(let i=0;i<line.length;i++){
+      const c = line[i];
+      if(inQuotes){
+        if(c === '"'){
+          if(line[i+1] === '"'){ cur += '"'; i++; } else { inQuotes = false; }
+        } else { cur += c; }
+      } else {
+        if(c === '"') inQuotes = true;
+        else if(c === ','){ result.push(cur); cur = ''; }
+        else cur += c;
+      }
+    }
+    result.push(cur);
+    return result.map(s => s.trim());
+  }
+
+  function decodeBuffer(buf){
+    try{
+      return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    }catch(e){
+      try{
+        return new TextDecoder('shift_jis').decode(buf);
+      }catch(e2){
+        return new TextDecoder('utf-8').decode(buf);
+      }
+    }
+  }
+
+  function readCsvRows(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          let text = decodeBuffer(reader.result);
+          text = text.replace(/^﻿/, '');
+          const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
+          resolve(lines.map(parseCsvLine));
+        }catch(err){ reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function parseItemCsvFile(file){
+    const rows = await readCsvRows(file);
+    if(rows.length === 0) return [];
+    const nameKeys = ['商品名','品名','名称','品目','商品'];
+    const qtyKeys = ['数量','個数','員数'];
+    let nameIdx = -1, qtyIdx = -1, hasHeader = false;
+    const first = rows[0];
+    first.forEach((cell, i) => {
+      const c = cell.replace(/\s/g, '');
+      if(nameIdx === -1 && nameKeys.some(k => c.includes(k))) nameIdx = i;
+      if(qtyIdx === -1 && qtyKeys.some(k => c.includes(k))) qtyIdx = i;
+    });
+    if(nameIdx !== -1){ hasHeader = true; }
+    else { nameIdx = 0; qtyIdx = first.length > 1 ? 1 : -1; }
+
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+    const items = [];
+    dataRows.forEach(row => {
+      const name = (row[nameIdx] || '').trim();
+      if(!name) return;
+      let qty = qtyIdx >= 0 ? parseInt(row[qtyIdx], 10) : 1;
+      if(isNaN(qty) || qty <= 0) qty = 1;
+      items.push({ name, qty });
+    });
+    return items;
+  }
+
+  async function parseSetCsvFile(file){
+    const rows = await readCsvRows(file);
+    if(rows.length === 0) return [];
+    const setKeys = ['セット名','セット','パッケージ名','パッケージ'];
+    const nameKeys = ['商品名','品名','名称','品目','商品'];
+    const qtyKeys = ['数量','個数','員数'];
+    let setIdx = -1, nameIdx = -1, qtyIdx = -1, hasHeader = false;
+    const first = rows[0];
+    first.forEach((cell, i) => {
+      const c = cell.replace(/\s/g, '');
+      if(setIdx === -1 && setKeys.some(k => c.includes(k))) setIdx = i;
+      if(nameIdx === -1 && nameKeys.some(k => c.includes(k))) nameIdx = i;
+      if(qtyIdx === -1 && qtyKeys.some(k => c.includes(k))) qtyIdx = i;
+    });
+    if(setIdx !== -1){ hasHeader = true; }
+    else { setIdx = 0; nameIdx = 1; qtyIdx = first.length > 2 ? 2 : -1; }
+
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+    const rowsOut = [];
+    dataRows.forEach(row => {
+      const setName = (row[setIdx] || '').trim();
+      const name = (row[nameIdx] || '').trim();
+      if(!setName || !name) return;
+      let qty = qtyIdx >= 0 ? parseInt(row[qtyIdx], 10) : 1;
+      if(isNaN(qty) || qty <= 0) qty = 1;
+      rowsOut.push({ setName, name, qty });
+    });
+    return rowsOut;
+  }
+
+  /* ---------------- set library ---------------- */
+  const setOverlay = document.getElementById('setOverlay');
+  const setStartOverlay = document.getElementById('setStartOverlay');
+  const setCsvFile = document.getElementById('setCsvFile');
+  let pendingStartSetId = null;
+
+  document.getElementById('btnSet').addEventListener('click', () => {
+    renderSetListPanel();
+    openOverlay(setOverlay);
+  });
+  document.getElementById('setCloseBtn').addEventListener('click', () => closeOverlay(setOverlay));
+  document.getElementById('setCsvImportBtn').addEventListener('click', () => setCsvFile.click());
+
+  setCsvFile.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    setCsvFile.value = '';
+    if(!file) return;
+    try{
+      const rows = await parseSetCsvFile(file);
+      if(rows.length === 0){
+        showConfirm('取り込みエラー', 'CSVからセットデータを読み取れませんでした。1列目にセット名、2列目に商品名、3列目に数量（任意）の形式で保存してください。', () => {}, true);
+        return;
+      }
+      const grouped = {};
+      rows.forEach(r => {
+        if(!grouped[r.setName]) grouped[r.setName] = [];
+        grouped[r.setName].push({ name: r.name, qty: r.qty });
+      });
+      let added = 0, updated = 0;
+      Object.keys(grouped).forEach(setName => {
+        const existing = state.setLibrary.find(s => s.name === setName);
+        if(existing){ existing.items = grouped[setName]; updated++; }
+        else { state.setLibrary.push({ id: uid(), name: setName, items: grouped[setName], importedAt: Date.now() }); added++; }
+      });
+      saveState();
+      renderSetListPanel();
+      showToast(added + '件追加・' + updated + '件更新しました');
+    }catch(err){
+      showConfirm('取り込みエラー', 'CSVの読み込み中にエラーが発生しました。ファイル形式をご確認ください。', () => {}, true);
+    }
+  });
+
+  function renderSetListPanel(){
+    const panel = document.getElementById('setListPanel');
+    if(state.setLibrary.length === 0){
+      panel.innerHTML = '<p class="muted-empty">まだセットが登録されていません。CSVで一括登録してください。</p>';
+      return;
+    }
+    panel.innerHTML = state.setLibrary.map(s => {
+      const summary = s.items.length ? s.items.map(i => i.name + '×' + i.qty).join(' / ') : '品目が未登録です';
+      return `
+        <div class="card-item" data-sid="${s.id}">
+          <div class="ci-top"><span class="ci-name">${escapeHtml(s.name)}</span></div>
+          <div class="ci-sub">${escapeHtml(summary)}</div>
+          <div class="ci-actions">
+            <button class="btn primary" data-saction="start" data-sid="${s.id}">開始する</button>
+            <button class="btn" data-saction="edit" data-sid="${s.id}">編集</button>
+            <button class="btn danger" data-saction="delete" data-sid="${s.id}">削除</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('setListPanel').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-saction]');
+    if(!btn) return;
+    const sid = btn.getAttribute('data-sid');
+    const set = state.setLibrary.find(s => s.id === sid);
+    if(!set) return;
+    const action = btn.getAttribute('data-saction');
+    if(action === 'start'){
+      pendingStartSetId = sid;
+      document.getElementById('setStartSummary').textContent =
+        '「' + set.name + '」(' + set.items.length + '品目) の新しい作業タブを開きます。';
+      document.getElementById('setStartNote').value = '';
+      openOverlay(setStartOverlay);
+    } else if(action === 'edit'){
+      openSetEdit(sid);
+    } else if(action === 'delete'){
+      showConfirm('セットを削除', '「' + set.name + '」をセット一覧から削除します。よろしいですか？（CSVを再取込すれば復元できます）', () => {
+        state.setLibrary = state.setLibrary.filter(s => s.id !== sid);
+        saveState();
+        renderSetListPanel();
+      });
+    }
+  });
+
+  document.getElementById('setStartCancelBtn').addEventListener('click', () => { pendingStartSetId = null; closeOverlay(setStartOverlay); });
+  document.getElementById('setStartConfirmBtn').addEventListener('click', () => {
+    const set = state.setLibrary.find(s => s.id === pendingStartSetId);
+    if(!set){ closeOverlay(setStartOverlay); return; }
+    const note = document.getElementById('setStartNote').value.trim();
+    const job = {
+      id: uid(), name: set.name, note, color: null, createdAt: Date.now(),
+      items: set.items.map(i => ({ id: uid(), name: i.name, qty: i.qty, checked: false, checkedAt: null }))
+    };
+    state.jobs.push(job);
+    state.activeJobId = job.id;
+    pendingStartSetId = null;
+    saveState();
+    closeOverlay(setStartOverlay);
+    closeOverlay(setOverlay);
+    render();
+  });
+
+  /* ---------------- set editing ---------------- */
+  const setEditOverlay = document.getElementById('setEditOverlay');
+  let editingSetId = null;
+
+  document.getElementById('setCreateBtn').addEventListener('click', () => {
+    const s = { id: uid(), name: '新しいセット', items: [], importedAt: Date.now() };
+    state.setLibrary.push(s);
+    saveState();
+    openSetEdit(s.id);
+  });
+
+  function currentEditingSet(){
+    return state.setLibrary.find(s => s.id === editingSetId);
+  }
+
+  function openSetEdit(id){
+    editingSetId = id;
+    const set = currentEditingSet();
+    if(!set) return;
+    document.getElementById('setEditItemName').value = '';
+    document.getElementById('setEditItemQty').value = '1';
+    renderSetEditName();
+    renderSetEditItems();
+    openOverlay(setEditOverlay);
+  }
+
+  function renderSetEditName(){
+    const set = currentEditingSet();
+    if(!set) return;
+    const text = document.getElementById('setEditNameText');
+    if(text) text.textContent = set.name;
+    document.getElementById('setEditRenameBtn').innerHTML = ICONS.pencil;
+  }
+
+  function renderSetEditItems(){
+    const set = currentEditingSet();
+    if(!set) return;
+    const panel = document.getElementById('setEditItemsPanel');
+    if(set.items.length === 0){
+      panel.innerHTML = '<p class="muted-empty">品目がありません。下のフォームから追加してください。</p>';
+      return;
+    }
+    panel.innerHTML = set.items.map((it, i) => `
+      <div class="trash-item">
+        <span class="ti-name">${escapeHtml(it.name)} ×${it.qty}</span>
+        <span class="ti-actions"><button class="btn danger" data-setitemdel="${i}">削除</button></span>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('setEditItemsPanel').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-setitemdel]');
+    if(!btn) return;
+    const set = currentEditingSet();
+    if(!set) return;
+    const i = parseInt(btn.getAttribute('data-setitemdel'), 10);
+    set.items.splice(i, 1);
+    saveState();
+    renderSetEditItems();
+  });
+
+  function submitSetEditItem(){
+    const set = currentEditingSet();
+    if(!set) return;
+    const nameEl = document.getElementById('setEditItemName');
+    const qtyEl = document.getElementById('setEditItemQty');
+    const name = nameEl.value.trim();
+    if(!name){ nameEl.focus(); return; }
+    let qty = parseInt(qtyEl.value, 10);
+    if(isNaN(qty) || qty <= 0) qty = 1;
+    set.items.push({ name, qty });
+    saveState();
+    renderSetEditItems();
+    nameEl.value = '';
+    qtyEl.value = '1';
+    nameEl.focus();
+  }
+  document.getElementById('setEditAddItemBtn').addEventListener('click', submitSetEditItem);
+  document.getElementById('setEditItemName').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitSetEditItem(); });
+  document.getElementById('setEditItemQty').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitSetEditItem(); });
+
+  function startSetEditRename(){
+    const row = document.getElementById('setEditNameRow');
+    const set = currentEditingSet();
+    if(!set) return;
+    const current = set.name;
+    row.innerHTML = `
+      <input class="rename-input" id="setEditRenameInput" type="text" value="${escapeHtml(current)}" style="font-size:17px;">
+      <button class="iconbtn" id="setEditRenameSaveBtn">${ICONS.check}</button>
+    `;
+    const input = document.getElementById('setEditRenameInput');
+    input.focus();
+    input.select();
+    function commit(){
+      const v = input.value.trim();
+      set.name = v || current;
+      saveState();
+      restoreRow();
+    }
+    function restoreRow(){
+      row.innerHTML = `
+        <div class="listname" id="setEditNameText" style="font-size:17px;"></div>
+        <button class="iconbtn" id="setEditRenameBtn"></button>
+      `;
+      renderSetEditName();
+      document.getElementById('setEditRenameBtn').addEventListener('click', startSetEditRename);
+    }
+    document.getElementById('setEditRenameSaveBtn').addEventListener('click', commit);
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter') commit(); });
+  }
+  document.getElementById('setEditRenameBtn').addEventListener('click', startSetEditRename);
+
+  document.getElementById('setEditCloseBtn').addEventListener('click', () => {
+    closeOverlay(setEditOverlay);
+    editingSetId = null;
+    renderSetListPanel();
+  });
+
+  /* ---------------- history / trash ---------------- */
+  const historyOverlay = document.getElementById('historyOverlay');
+  document.getElementById('btnHistory').addEventListener('click', () => {
+    renderHistoryTab();
+    renderTrashTab();
+    switchTab('history');
+    openOverlay(historyOverlay);
+  });
+  document.getElementById('historyCloseBtn').addEventListener('click', () => closeOverlay(historyOverlay));
+
+  document.getElementById('tabHistoryBtn').addEventListener('click', () => switchTab('history'));
+  document.getElementById('tabTrashBtn').addEventListener('click', () => switchTab('trash'));
+  document.getElementById('tabBackupBtn').addEventListener('click', () => switchTab('backup'));
+  function switchTab(tab){
+    document.getElementById('tabHistoryBtn').setAttribute('aria-selected', tab === 'history');
+    document.getElementById('tabTrashBtn').setAttribute('aria-selected', tab === 'trash');
+    document.getElementById('tabBackupBtn').setAttribute('aria-selected', tab === 'backup');
+    document.getElementById('tabHistoryPanel').classList.toggle('active', tab === 'history');
+    document.getElementById('tabTrashPanel').classList.toggle('active', tab === 'trash');
+    document.getElementById('tabBackupPanel').classList.toggle('active', tab === 'backup');
+  }
+
+  function renderHistoryTab(){
+    const panel = document.getElementById('tabHistoryPanel');
+    if(state.history.length === 0){
+      panel.innerHTML = '<p class="muted-empty">履歴はまだありません。</p>';
+      return;
+    }
+    panel.innerHTML = state.history.map(h => {
+      const total = h.items.length;
+      const done = h.items.filter(i => i.checked).length;
+      const label = h.note ? (h.name + '・' + h.note) : h.name;
+      return `
+        <div class="card-item" data-hid="${h.id}-${h.archivedAt}">
+          <div class="ci-top"><span class="ci-name">${escapeHtml(label)}</span><span class="ci-date">${fmtDate(h.archivedAt)}</span></div>
+          <div class="ci-sub">${total}件中 ${done}件完了</div>
+          <div class="ci-actions">
+            <button class="btn primary" data-haction="restore" data-hid="${h.id}-${h.archivedAt}">タブとして復元</button>
+            <button class="btn danger" data-haction="delete" data-hid="${h.id}-${h.archivedAt}">完全に削除</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('tabHistoryPanel').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-haction]');
+    if(!btn) return;
+    const hid = btn.getAttribute('data-hid');
+    const idx = state.history.findIndex(h => (h.id + '-' + h.archivedAt) === hid);
+    if(idx === -1) return;
+    const action = btn.getAttribute('data-haction');
+    if(action === 'restore'){
+      const target = state.history[idx];
+      showConfirm('タブとして復元', '「' + target.name + '」を新しいタブとして復元します。よろしいですか？', () => {
+        state.history.splice(idx, 1);
+        const job = { id: target.id, name: target.name, note: target.note || '', color: target.color || null, createdAt: target.createdAt, items: target.items };
+        state.jobs.push(job);
+        state.activeJobId = job.id;
+        saveState();
+        render();
+        renderHistoryTab();
+        closeOverlay(historyOverlay);
+      });
+    } else if(action === 'delete'){
+      showConfirm('履歴を完全に削除', 'この履歴データは元に戻せません。完全に削除しますか？', () => {
+        state.history.splice(idx, 1);
+        saveState();
+        renderHistoryTab();
+      });
+    }
+  });
+
+  function renderTrashTab(){
+    const panel = document.getElementById('tabTrashPanel');
+    if(state.trash.length === 0){
+      panel.innerHTML = '<p class="muted-empty">ゴミ箱は空です。</p>';
+      return;
+    }
+    panel.innerHTML = state.trash.map((t, i) => `
+      <div class="trash-item" data-tindex="${i}">
+        <span class="ti-name">${escapeHtml(t.name)} ×${t.qty}</span>
+        <span class="ti-date">${fmtDate(t.deletedAt)}</span>
+        <span class="ti-actions">
+          <button class="btn" data-taction="restore" data-tindex="${i}">復元</button>
+          <button class="btn danger" data-taction="delete" data-tindex="${i}">削除</button>
+        </span>
+      </div>
+    `).join('') + '<div class="sheet-actions"><button class="btn danger" id="emptyTrashBtn">ゴミ箱を空にする</button></div>';
+
+    const emptyBtn = document.getElementById('emptyTrashBtn');
+    if(emptyBtn){
+      emptyBtn.addEventListener('click', () => {
+        showConfirm('ゴミ箱を空にする', 'ゴミ箱の中身をすべて完全に削除します。元に戻せません。よろしいですか？', () => {
+          state.trash = [];
+          saveState();
+          renderTrashTab();
+        });
+      });
+    }
+  }
+
+  document.getElementById('tabTrashPanel').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-taction]');
+    if(!btn) return;
+    const i = parseInt(btn.getAttribute('data-tindex'), 10);
+    const item = state.trash[i];
+    if(!item) return;
+    const action = btn.getAttribute('data-taction');
+    if(action === 'restore'){
+      let targetJob = state.jobs.find(j => j.id === item.fromJobId);
+      let fellBack = false;
+      if(!targetJob){ targetJob = activeJob(); fellBack = true; }
+      targetJob.items.push({ id: item.id, name: item.name, qty: item.qty, checked: false, checkedAt: null });
+      state.trash.splice(i, 1);
+      saveState();
+      render();
+      renderTrashTab();
+      if(fellBack){
+        showToast('元のタブが見つからないため「' + targetJob.name + '」に復元しました', null);
+      }
+    } else if(action === 'delete'){
+      showConfirm('完全に削除', '「' + item.name + '」をゴミ箱から完全に削除します。よろしいですか？', () => {
+        state.trash.splice(i, 1);
+        saveState();
+        renderTrashTab();
+      });
+    }
+  });
+
+  /* ---------------- backup export / import ---------------- */
+  function fmtFileStamp(ts){
+    const d = new Date(ts);
+    return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0')
+      + '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function exportBackup(){
+    const payload = JSON.stringify(state, null, 2);
+    const filename = 'picking-backup-' + fmtFileStamp(Date.now()) + '.json';
+    if(window.claude && window.claude.downloads){
+      window.claude.downloads.save({ filename, data: payload }).then(() => {
+        showToast('バックアップを書き出しました');
+      }).catch((err) => {
+        const code = err && err.code;
+        if(code === 'declined' || code === 'rate_limited') return;
+        showConfirm('書き出しエラー', 'バックアップの書き出しに失敗しました。時間をおいてもう一度お試しください。', () => {}, true);
+      });
+    } else {
+      try{
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('バックアップを書き出しました');
+      }catch(e){
+        showConfirm('書き出しエラー', 'バックアップの書き出しに失敗しました。', () => {}, true);
+      }
+    }
+  }
+
+  function sanitizeItem(i){
+    if(!i || !i.name) return null;
+    return {
+      id: i.id || uid(),
+      name: String(i.name),
+      qty: (Number.isFinite(i.qty) && i.qty > 0) ? Math.floor(i.qty) : 1,
+      checked: !!i.checked,
+      checkedAt: i.checkedAt || null
+    };
+  }
+
+  function mergeBackup(data){
+    if(!data || !Array.isArray(data.jobs)) throw new Error('invalid backup');
+    let jobsAdded = 0, jobsUpdated = 0, setsAdded = 0, setsUpdated = 0;
+
+    data.jobs.forEach(j => {
+      if(!j || !j.id || !j.name || !Array.isArray(j.items)) return;
+      const clean = { id: j.id, name: j.name, note: j.note || '', color: j.color || null, createdAt: j.createdAt || Date.now(), items: j.items.map(sanitizeItem).filter(Boolean) };
+      const idx = state.jobs.findIndex(x => x.id === j.id);
+      if(idx === -1){ state.jobs.push(clean); jobsAdded++; }
+      else { state.jobs[idx] = clean; jobsUpdated++; }
+    });
+
+    (data.setLibrary || []).forEach(s => {
+      if(!s || !s.name || !Array.isArray(s.items)) return;
+      const items = s.items.map(i => ({ name: String(i && i.name || '').trim(), qty: (i && Number.isFinite(i.qty) && i.qty > 0) ? Math.floor(i.qty) : 1 })).filter(i => i.name);
+      if(items.length === 0) return;
+      const existing = state.setLibrary.find(x => x.name === s.name);
+      if(existing){ existing.items = items; setsUpdated++; }
+      else { state.setLibrary.push({ id: s.id || uid(), name: s.name, items, importedAt: Date.now() }); setsAdded++; }
+    });
+
+    (data.history || []).forEach(h => {
+      if(!h || !h.id || !h.archivedAt) return;
+      const exists = state.history.some(x => x.id === h.id && x.archivedAt === h.archivedAt);
+      if(!exists){
+        state.history.unshift({ id: h.id, name: h.name || 'リスト', note: h.note || '', color: h.color || null, createdAt: h.createdAt || Date.now(), archivedAt: h.archivedAt, items: (h.items || []).map(sanitizeItem).filter(Boolean) });
+      }
+    });
+
+    (data.trash || []).forEach(t => {
+      if(!t || !t.id || !t.deletedAt) return;
+      const exists = state.trash.some(x => x.id === t.id && x.deletedAt === t.deletedAt);
+      if(!exists){
+        state.trash.unshift({ id: t.id, name: t.name || '', qty: Number.isFinite(t.qty) ? t.qty : 1, checked: false, checkedAt: null, deletedAt: t.deletedAt, fromJobId: t.fromJobId || null, fromJobName: t.fromJobName || '' });
+      }
+    });
+
+    if(state.jobs.length === 0){
+      const nj = createEmptyJob('本日のピッキング');
+      state.jobs.push(nj);
+      state.activeJobId = nj.id;
+    } else if(!state.jobs.some(j => j.id === state.activeJobId)){
+      state.activeJobId = state.jobs[0].id;
+    }
+
+    return { jobsAdded, jobsUpdated, setsAdded, setsUpdated };
+  }
+
+  document.getElementById('backupExportBtn').addEventListener('click', exportBackup);
+  document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupFile').click());
+  document.getElementById('backupFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        const result = mergeBackup(data);
+        saveState();
+        render();
+        renderHistoryTab();
+        renderTrashTab();
+        showToast('タブ追加' + result.jobsAdded + '・更新' + result.jobsUpdated + '件、セット追加' + result.setsAdded + '・更新' + result.setsUpdated + '件を読み込みました');
+      }catch(err){
+        showConfirm('読み込みエラー', 'バックアップファイルを読み込めませんでした。正しいJSONファイルかご確認ください。', () => {}, true);
+      }
+    };
+    reader.onerror = () => {
+      showConfirm('読み込みエラー', 'ファイルの読み込みに失敗しました。', () => {}, true);
+    };
+    reader.readAsText(file);
+  });
+
+  /* ---------------- overlay helpers ---------------- */
+  function openOverlay(el){ el.classList.add('open'); }
+  function closeOverlay(el){ el.classList.remove('open'); }
+  document.querySelectorAll('.overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => { if(e.target === ov) closeOverlay(ov); });
+  });
+
+  /* ---------------- confirm modal ---------------- */
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  let confirmCallback = null;
+  function showConfirm(title, text, onOk, infoOnly){
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmText').textContent = text;
+    const okBtn = document.getElementById('confirmOkBtn');
+    okBtn.textContent = infoOnly ? 'OK' : '実行する';
+    okBtn.className = infoOnly ? 'btn primary' : 'btn danger';
+    document.getElementById('confirmCancelBtn').style.display = infoOnly ? 'none' : '';
+    confirmCallback = onOk;
+    openOverlay(confirmOverlay);
+  }
+  document.getElementById('confirmOkBtn').addEventListener('click', () => {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    closeOverlay(confirmOverlay);
+    if(cb) cb();
+  });
+  document.getElementById('confirmCancelBtn').addEventListener('click', () => {
+    confirmCallback = null;
+    closeOverlay(confirmOverlay);
+  });
+
+  /* ---------------- toast ---------------- */
+  const toast = document.getElementById('toast');
+  const toastUndoBtn = document.getElementById('toastUndoBtn');
+  let toastTimer = null;
+  function showToast(msg, onUndo){
+    document.getElementById('toastMsg').textContent = msg;
+    if(onUndo){
+      toastUndoBtn.style.display = '';
+      toastUndoBtn.onclick = () => { hideToast(); onUndo(); };
+    } else {
+      toastUndoBtn.style.display = 'none';
+      toastUndoBtn.onclick = null;
+    }
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 5000);
+  }
+  function hideToast(){ toast.classList.remove('show'); }
+
+  /* ---------------- init ---------------- */
+  render();
+})();
+</script>
