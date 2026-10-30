@@ -242,6 +242,10 @@
   .toast button{background:none; border:none; color:var(--accent-strong); font-weight:700; font-size:13px; cursor:pointer; flex:none;}
 
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+
+  .share-badge{font-size:10.5px; font-weight:700; color:var(--accent-strong); background:var(--accent-soft); border-radius:6px; padding:3px 7px; flex:none;}
+  .share-code-display{font-size:32px; font-weight:800; letter-spacing:4px; text-align:center; font-family:"SFMono-Regular",Consolas,monospace; background:var(--surface-2); border-radius:12px; padding:18px 10px; margin:14px 0; color:var(--accent-strong);}
+  .share-status{font-size:12.5px; color:var(--text-muted); text-align:center; margin:-6px 0 14px;}
 </style>
 
 <div class="app">
@@ -256,6 +260,8 @@
     <div class="listname-row" id="listnameRow">
       <div class="listname" id="listnameText">リスト</div>
       <div class="listmeta" id="listmetaText"></div>
+      <span class="share-badge" id="shareBadge" style="display:none;">共有中</span>
+      <button class="iconbtn" id="shareBtn" aria-label="共有" title="共有"></button>
       <button class="iconbtn" id="colorPickBtn" aria-label="タブの色" title="タブの色"></button>
       <button class="iconbtn" id="renameBtn" aria-label="リスト名を編集" title="リスト名を編集"></button>
     </div>
@@ -368,7 +374,36 @@
     <div class="sheet-actions stack">
       <button class="btn primary" id="newJobFromSetBtn">セットから選ぶ</button>
       <button class="btn" id="newJobEmptyBtn">空のリストを追加</button>
+      <button class="btn" id="newJobJoinBtn">共有コードで参加する</button>
       <button class="btn ghost" id="newJobCancelBtn">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 共有コードで参加 -->
+<div class="overlay" id="joinShareOverlay">
+  <div class="sheet">
+    <h2>共有コードで参加</h2>
+    <p class="sub">相手の端末に表示されている6桁の共有コードを入力してください。</p>
+    <div class="field">
+      <label for="joinShareCode">共有コード</label>
+      <input id="joinShareCode" type="text" placeholder="例: A3F9K2" autocomplete="off" style="text-transform:uppercase; letter-spacing:2px; font-weight:700;">
+    </div>
+    <p class="share-status" id="joinShareError" style="display:none; color:var(--danger);"></p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="joinShareCancelBtn">キャンセル</button>
+      <button class="btn primary" id="joinShareConfirmBtn">参加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 共有 -->
+<div class="overlay" id="shareOverlay">
+  <div class="sheet">
+    <h2>このタブを共有</h2>
+    <div id="shareOverlayBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="shareCloseBtn">閉じる</button>
     </div>
   </div>
 </div>
@@ -589,9 +624,11 @@
     box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>',
     layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
     x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
-    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
+    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>',
+    share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5 15.4 6.5"/><path d="M8.6 13.5 15.4 17.5"/></svg>'
   };
   const TAB_COLORS = ['#B4483A','#C9752E','#B99A2E','#4C8C4A','#2E6B73','#3B6FA6','#7A4FB0','#B0507B'];
+  document.getElementById('shareBtn').innerHTML = ICONS.share;
   document.getElementById('renameBtn').innerHTML = ICONS.pencil;
   document.getElementById('noteEditBtn').innerHTML = ICONS.pencil;
   document.getElementById('settingsBtn').innerHTML = ICONS.gear;
@@ -645,8 +682,12 @@
   }
 
   let state = loadState();
-  function saveState(){
+  function persistLocalOnly(){
     localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
+  }
+  function saveState(){
+    persistLocalOnly();
+    state.jobs.filter(j => j.shared && j.shareCode).forEach(schedulePushShared);
   }
   function activeJob(){
     return state.jobs.find(j => j.id === state.activeJobId) || state.jobs[0];
@@ -703,6 +744,7 @@
     const job = state.jobs.find(j => j.id === id);
     if(!job) return;
     showConfirm('タブを閉じる', '「' + job.name + '」を閉じます。作業内容は履歴に保存され、後で復元できます。よろしいですか？', () => {
+      if(job.shared && job.shareCode) detachShareListener(job.shareCode);
       state.history.unshift({ id: job.id, name: job.name, note: job.note, color: job.color || null, createdAt: job.createdAt, archivedAt: Date.now(), items: job.items });
       state.jobs = state.jobs.filter(j => j.id !== id);
       if(state.jobs.length === 0){
@@ -721,6 +763,7 @@
     const job = activeJob();
     document.getElementById('listnameText').textContent = job.name;
     document.getElementById('listmetaText').textContent = fmtDate(job.createdAt) + ' 作成';
+    document.getElementById('shareBadge').style.display = job.shared ? '' : 'none';
     renderNoteRow();
     renderColorDot();
   }
@@ -1704,6 +1747,201 @@
     };
     reader.readAsText(file);
   });
+
+  /* ---------------- realtime sharing (Firebase) ---------------- */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDPG4JVWXR_k321Pq9q1e6XUhFiPXz8kac",
+    authDomain: "picking-app-aab80.firebaseapp.com",
+    projectId: "picking-app-aab80",
+    storageBucket: "picking-app-aab80.firebasestorage.app",
+    messagingSenderId: "779558770874",
+    appId: "1:779558770874:web:33d206ba82c1ba39998a83"
+  };
+  const FIREBASE_SDK_VER = '13.1.0';
+  let fbPromise = null;
+  function ensureFirebase(){
+    if(fbPromise) return fbPromise;
+    fbPromise = (async () => {
+      const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER}/firebase-app.js`);
+      const { getFirestore, doc, setDoc, getDoc, onSnapshot } = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER}/firebase-firestore.js`);
+      const app = initializeApp(FIREBASE_CONFIG);
+      const db = getFirestore(app);
+      return { db, doc, setDoc, getDoc, onSnapshot };
+    })();
+    return fbPromise;
+  }
+
+  function generateShareCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for(let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  function shareDocData(job){
+    return { name: job.name, note: job.note || '', color: job.color || null, createdAt: job.createdAt, items: job.items, updatedAt: Date.now() };
+  }
+
+  const shareListeners = {};
+  const sharePushTimers = {};
+
+  function schedulePushShared(job){
+    clearTimeout(sharePushTimers[job.shareCode]);
+    sharePushTimers[job.shareCode] = setTimeout(async () => {
+      try{
+        const { db, doc, setDoc } = await ensureFirebase();
+        await setDoc(doc(db, 'sharedJobs', job.shareCode), shareDocData(job));
+      }catch(e){ /* offline or network error: next change will retry */ }
+    }, 300);
+  }
+
+  async function attachShareListener(shareCode){
+    if(shareListeners[shareCode]) return;
+    const { db, doc, onSnapshot } = await ensureFirebase();
+    shareListeners[shareCode] = onSnapshot(doc(db, 'sharedJobs', shareCode), (snap) => {
+      if(!snap.exists()) return;
+      const data = snap.data();
+      const job = state.jobs.find(j => j.shareCode === shareCode);
+      if(!job) return;
+      job.name = data.name || job.name;
+      job.note = data.note || '';
+      job.color = data.color || null;
+      job.items = Array.isArray(data.items) ? data.items : job.items;
+      persistLocalOnly();
+      render();
+      if(document.getElementById('shareOverlay').classList.contains('open')) renderShareOverlay();
+    }, () => { /* ignore listen errors (e.g. offline) */ });
+  }
+
+  function detachShareListener(shareCode){
+    if(shareListeners[shareCode]){ shareListeners[shareCode](); delete shareListeners[shareCode]; }
+    clearTimeout(sharePushTimers[shareCode]);
+  }
+
+  // resume listening to any jobs that were already shared before this page load
+  state.jobs.filter(j => j.shared && j.shareCode).forEach(j => attachShareListener(j.shareCode));
+
+  async function startSharing(){
+    const job = activeJob();
+    const code = generateShareCode();
+    job.shared = true;
+    job.shareCode = code;
+    persistLocalOnly();
+    render();
+    renderShareOverlay();
+    try{
+      const { db, doc, setDoc } = await ensureFirebase();
+      await setDoc(doc(db, 'sharedJobs', code), shareDocData(job));
+      attachShareListener(code);
+    }catch(e){
+      showConfirm('共有エラー', '共有の開始に失敗しました。ネット接続をご確認のうえ、もう一度お試しください。', () => {}, true);
+      job.shared = false;
+      job.shareCode = null;
+      persistLocalOnly();
+      render();
+      renderShareOverlay();
+    }
+  }
+
+  function stopSharing(){
+    const job = activeJob();
+    showConfirm('共有をやめる', 'このタブの共有をやめます。この端末のデータはそのまま残ります。他の端末は共有コードを知っていれば引き続きやり取りできます。よろしいですか？', () => {
+      detachShareListener(job.shareCode);
+      job.shared = false;
+      job.shareCode = null;
+      persistLocalOnly();
+      render();
+      renderShareOverlay();
+    });
+  }
+
+  function renderShareOverlay(){
+    const job = activeJob();
+    const body = document.getElementById('shareOverlayBody');
+    if(job.shared && job.shareCode){
+      body.innerHTML = `
+        <p class="sub">このタブは共有中です。下のコードを他の端末に伝えると、同じ内容をリアルタイムで共有できます。</p>
+        <div class="share-code-display">${escapeHtml(job.shareCode)}</div>
+        <p class="share-status">チェックや追加・削除はすべての端末にすぐ反映されます。</p>
+        <div class="sheet-actions">
+          <button class="btn" id="shareCopyBtn">コードをコピー</button>
+          <button class="btn danger" id="shareStopBtn">共有をやめる</button>
+        </div>
+      `;
+      document.getElementById('shareCopyBtn').addEventListener('click', async () => {
+        try{ await navigator.clipboard.writeText(job.shareCode); showToast('コードをコピーしました'); }
+        catch(e){ showConfirm('コピー失敗', 'コードのコピーに失敗しました。手動で入力してください：' + job.shareCode, () => {}, true); }
+      });
+      document.getElementById('shareStopBtn').addEventListener('click', stopSharing);
+    } else {
+      body.innerHTML = `
+        <p class="sub">このタブを共有すると、発行される6桁のコードを知っている他の端末とリアルタイムで内容を共有できます（チェックの状態や品目の追加・削除がすぐに反映されます）。データはFirebase（Googleのクラウド）に保存され、コードを知っている人なら誰でも見たり操作したりできる状態になります。</p>
+        <div class="sheet-actions">
+          <button class="btn primary" id="shareStartBtn">共有を開始する</button>
+        </div>
+      `;
+      document.getElementById('shareStartBtn').addEventListener('click', startSharing);
+    }
+  }
+
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    renderShareOverlay();
+    openOverlay(document.getElementById('shareOverlay'));
+  });
+  document.getElementById('shareCloseBtn').addEventListener('click', () => closeOverlay(document.getElementById('shareOverlay')));
+
+  /* ---------------- join shared tab ---------------- */
+  const joinShareOverlay = document.getElementById('joinShareOverlay');
+  document.getElementById('newJobJoinBtn').addEventListener('click', () => {
+    closeOverlay(document.getElementById('newJobOverlay'));
+    document.getElementById('joinShareCode').value = '';
+    document.getElementById('joinShareError').style.display = 'none';
+    openOverlay(joinShareOverlay);
+    document.getElementById('joinShareCode').focus();
+  });
+  document.getElementById('joinShareCancelBtn').addEventListener('click', () => closeOverlay(joinShareOverlay));
+
+  async function submitJoinShare(){
+    const input = document.getElementById('joinShareCode');
+    const errEl = document.getElementById('joinShareError');
+    const code = input.value.trim().toUpperCase();
+    errEl.style.display = 'none';
+    if(!code){ input.focus(); return; }
+    const existing = state.jobs.find(j => j.shareCode === code);
+    if(existing){
+      state.activeJobId = existing.id;
+      saveState();
+      render();
+      closeOverlay(joinShareOverlay);
+      return;
+    }
+    try{
+      const { db, doc, getDoc } = await ensureFirebase();
+      const snap = await getDoc(doc(db, 'sharedJobs', code));
+      if(!snap.exists()){
+        errEl.textContent = 'そのコードの共有リストが見つかりませんでした。コードをご確認ください。';
+        errEl.style.display = '';
+        return;
+      }
+      const data = snap.data();
+      const job = {
+        id: uid(), name: data.name || '共有リスト', note: data.note || '', color: data.color || null,
+        createdAt: data.createdAt || Date.now(), items: Array.isArray(data.items) ? data.items : [],
+        shared: true, shareCode: code
+      };
+      state.jobs.push(job);
+      state.activeJobId = job.id;
+      persistLocalOnly();
+      attachShareListener(code);
+      render();
+      closeOverlay(joinShareOverlay);
+    }catch(e){
+      errEl.textContent = '参加に失敗しました。ネット接続をご確認のうえ、もう一度お試しください。';
+      errEl.style.display = '';
+    }
+  }
+  document.getElementById('joinShareConfirmBtn').addEventListener('click', submitJoinShare);
+  document.getElementById('joinShareCode').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitJoinShare(); });
 
   /* ---------------- overlay helpers ---------------- */
   function openOverlay(el){ el.classList.add('open'); }
