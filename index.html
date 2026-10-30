@@ -212,6 +212,13 @@
   .tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
   .tabpanel{display:none;}
   .tabpanel.active{display:block;}
+  .catalog-list{max-height:240px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; margin-bottom:12px;}
+  .catalog-row{padding:11px 12px; border-bottom:1px solid var(--border); cursor:pointer; font-size:14px;}
+  .catalog-row:last-child{border-bottom:none;}
+  .catalog-row.selected{background:var(--accent-soft); color:var(--accent-strong); font-weight:700;}
+  .catalog-empty{padding:16px 12px; color:var(--text-muted); font-size:13px; text-align:center;}
+  .catalog-toolrow{display:flex; gap:8px; align-items:flex-end; margin-bottom:12px;}
+  .catalog-toolrow .field{flex:1; margin-bottom:0;}
 
   .card-item{border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
   .card-item .ci-top{display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:2px;}
@@ -307,20 +314,48 @@
 <div class="overlay" id="addOverlay">
   <div class="sheet">
     <h2>荷物を追加</h2>
-    <p class="sub">品名と数量を入力してください。追加後も入力欄は残るので連続で登録できます。</p>
-    <div class="row2">
-      <div class="field">
-        <label for="addName">品名</label>
-        <input id="addName" type="text" placeholder="例: 段ボール A-12" autocomplete="off">
+    <div class="tabs">
+      <button class="tab" id="tabAddFreeBtn" aria-selected="true">自由入力</button>
+      <button class="tab" id="tabAddCatalogBtn" aria-selected="false">リストから選ぶ</button>
+    </div>
+
+    <div class="tabpanel active" id="tabAddFreePanel">
+      <p class="sub">品名と数量を入力してください。追加後も入力欄は残るので連続で登録できます。</p>
+      <div class="row2">
+        <div class="field">
+          <label for="addName">品名</label>
+          <input id="addName" type="text" placeholder="例: 段ボール A-12" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="addQty">数量</label>
+          <input id="addQty" type="number" min="1" value="1" inputmode="numeric">
+        </div>
       </div>
-      <div class="field">
-        <label for="addQty">数量</label>
-        <input id="addQty" type="number" min="1" value="1" inputmode="numeric">
+      <div class="sheet-actions">
+        <button class="btn ghost" id="addCloseBtn">閉じる</button>
+        <button class="btn primary" id="addSubmitBtn">追加する</button>
       </div>
     </div>
-    <div class="sheet-actions">
-      <button class="btn ghost" id="addCloseBtn">閉じる</button>
-      <button class="btn primary" id="addSubmitBtn">追加する</button>
+
+    <div class="tabpanel" id="tabAddCatalogPanel">
+      <p class="sub">備品リストから選んで数量を入力してください。追加後も選択は残るので連続で登録できます。</p>
+      <div class="catalog-toolrow">
+        <div class="field">
+          <label for="addCatalogSearch">備品名で検索</label>
+          <input id="addCatalogSearch" type="text" placeholder="備品名で検索" autocomplete="off">
+        </div>
+        <button class="btn" id="addCatalogImportBtn">CSV取込</button>
+      </div>
+      <div class="catalog-list" id="addCatalogList"></div>
+      <div class="field">
+        <label for="addCatalogQty">数量</label>
+        <input id="addCatalogQty" type="number" min="1" value="1" inputmode="numeric">
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost" id="addCatalogCloseBtn">閉じる</button>
+        <button class="btn primary" id="addCatalogSubmitBtn">追加する</button>
+      </div>
+      <input type="file" id="catalogCsvFile" accept=".csv,text/csv" class="visually-hidden">
     </div>
   </div>
 </div>
@@ -581,6 +616,7 @@
         const parsed = JSON.parse(rawV2);
         parsed.jobs = parsed.jobs || [];
         parsed.setLibrary = parsed.setLibrary || [];
+        parsed.itemCatalog = parsed.itemCatalog || [];
         parsed.history = parsed.history || [];
         parsed.trash = parsed.trash || [];
         parsed.settings = parsed.settings || { vibration: true };
@@ -601,11 +637,11 @@
         };
         const history = (v1.history || []).map(h => ({ id: h.id, name: h.name, note: '', color: null, createdAt: h.createdAt, archivedAt: h.archivedAt, items: h.items || [] }));
         const trash = (v1.trash || []).map(t => ({ ...t, fromJobId: null, fromJobName: t.fromListName || '' }));
-        return { jobs: [job], activeJobId: job.id, setLibrary: [], history, trash, settings: { vibration: true } };
+        return { jobs: [job], activeJobId: job.id, setLibrary: [], itemCatalog: [], history, trash, settings: { vibration: true } };
       }
     }catch(e){ /* fall through to default */ }
     const job = createEmptyJob('新規入力');
-    return { jobs: [job], activeJobId: job.id, setLibrary: [], history: [], trash: [], settings: { vibration: true } };
+    return { jobs: [job], activeJobId: job.id, setLibrary: [], itemCatalog: [], history: [], trash: [], settings: { vibration: true } };
   }
 
   let state = loadState();
@@ -929,6 +965,7 @@
   /* ---------------- manual add ---------------- */
   const addOverlay = document.getElementById('addOverlay');
   document.getElementById('btnAdd').addEventListener('click', () => {
+    switchAddTab('free');
     openOverlay(addOverlay);
     document.getElementById('addName').focus();
   });
@@ -950,6 +987,97 @@
   document.getElementById('addSubmitBtn').addEventListener('click', submitAdd);
   document.getElementById('addName').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitAdd(); });
   document.getElementById('addQty').addEventListener('keydown', (e) => { if(e.key === 'Enter') submitAdd(); });
+
+  /* ---------------- manual add: catalog tab ---------------- */
+  document.getElementById('tabAddFreeBtn').addEventListener('click', () => switchAddTab('free'));
+  document.getElementById('tabAddCatalogBtn').addEventListener('click', () => switchAddTab('catalog'));
+  function switchAddTab(tab){
+    document.getElementById('tabAddFreeBtn').setAttribute('aria-selected', tab === 'free');
+    document.getElementById('tabAddCatalogBtn').setAttribute('aria-selected', tab === 'catalog');
+    document.getElementById('tabAddFreePanel').classList.toggle('active', tab === 'free');
+    document.getElementById('tabAddCatalogPanel').classList.toggle('active', tab === 'catalog');
+    if(tab === 'catalog') renderAddCatalogList();
+  }
+
+  let addCatalogSelectedId = null;
+  let addCatalogSearchTerm = '';
+
+  function renderAddCatalogList(){
+    const list = document.getElementById('addCatalogList');
+    if(state.itemCatalog.length === 0){
+      list.innerHTML = '<p class="catalog-empty">備品リストがまだありません。「CSV取込」から登録してください。</p>';
+      return;
+    }
+    let items = state.itemCatalog.slice().sort((a,b) => a.name.localeCompare(b.name, 'ja'));
+    if(addCatalogSearchTerm.trim()){
+      const t = addCatalogSearchTerm.trim().toLowerCase();
+      items = items.filter(i => i.name.toLowerCase().includes(t));
+    }
+    if(items.length === 0){
+      list.innerHTML = '<p class="catalog-empty">該当する備品がありません。</p>';
+      return;
+    }
+    list.innerHTML = items.map(i => `
+      <div class="catalog-row ${i.id === addCatalogSelectedId ? 'selected' : ''}" data-cid="${i.id}">${escapeHtml(i.name)}</div>
+    `).join('');
+  }
+
+  document.getElementById('addCatalogList').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-cid]');
+    if(!row) return;
+    addCatalogSelectedId = row.getAttribute('data-cid');
+    const item = state.itemCatalog.find(i => i.id === addCatalogSelectedId);
+    if(item) document.getElementById('addCatalogQty').value = item.qty || 1;
+    renderAddCatalogList();
+  });
+
+  document.getElementById('addCatalogSearch').addEventListener('input', (e) => {
+    addCatalogSearchTerm = e.target.value;
+    renderAddCatalogList();
+  });
+
+  function submitCatalogAdd(){
+    if(!addCatalogSelectedId){
+      showConfirm('未選択', '追加する備品をリストから選択してください。', () => {}, true);
+      return;
+    }
+    const catItem = state.itemCatalog.find(i => i.id === addCatalogSelectedId);
+    if(!catItem) return;
+    const qtyEl = document.getElementById('addCatalogQty');
+    let qty = parseInt(qtyEl.value, 10);
+    if(isNaN(qty) || qty <= 0) qty = 1;
+    activeJob().items.push({ id: uid(), name: catItem.name, qty, checked: false, checkedAt: null });
+    saveState();
+    render();
+    qtyEl.value = '1';
+  }
+  document.getElementById('addCatalogSubmitBtn').addEventListener('click', submitCatalogAdd);
+  document.getElementById('addCatalogCloseBtn').addEventListener('click', () => closeOverlay(addOverlay));
+
+  document.getElementById('addCatalogImportBtn').addEventListener('click', () => document.getElementById('catalogCsvFile').click());
+  document.getElementById('catalogCsvFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    try{
+      const items = await parseItemCsvFile(file);
+      if(items.length === 0){
+        showConfirm('取り込みエラー', 'CSVから備品データを読み取れませんでした。1列目に品名、2列目に数量（任意）の形式で保存してください。', () => {}, true);
+        return;
+      }
+      let added = 0, updated = 0;
+      items.forEach(it => {
+        const existing = state.itemCatalog.find(c => c.name === it.name);
+        if(existing){ existing.qty = it.qty; updated++; }
+        else { state.itemCatalog.push({ id: uid(), name: it.name, qty: it.qty }); added++; }
+      });
+      saveState();
+      renderAddCatalogList();
+      showToast(added + '件追加・' + updated + '件更新しました');
+    }catch(err){
+      showConfirm('取り込みエラー', 'CSVの読み込み中にエラーが発生しました。ファイル形式をご確認ください。', () => {}, true);
+    }
+  });
 
   /* ---------------- new tab ---------------- */
   const newJobOverlay = document.getElementById('newJobOverlay');
@@ -1514,6 +1642,16 @@
       else { state.setLibrary.push({ id: s.id || uid(), name: s.name, items, importedAt: Date.now() }); setsAdded++; }
     });
 
+    let catalogAdded = 0, catalogUpdated = 0;
+    (data.itemCatalog || []).forEach(c => {
+      const name = String(c && c.name || '').trim();
+      if(!name) return;
+      const qty = (c && Number.isFinite(c.qty) && c.qty > 0) ? Math.floor(c.qty) : 1;
+      const existing = state.itemCatalog.find(x => x.name === name);
+      if(existing){ existing.qty = qty; catalogUpdated++; }
+      else { state.itemCatalog.push({ id: c.id || uid(), name, qty }); catalogAdded++; }
+    });
+
     (data.history || []).forEach(h => {
       if(!h || !h.id || !h.archivedAt) return;
       const exists = state.history.some(x => x.id === h.id && x.archivedAt === h.archivedAt);
@@ -1538,7 +1676,7 @@
       state.activeJobId = state.jobs[0].id;
     }
 
-    return { jobsAdded, jobsUpdated, setsAdded, setsUpdated };
+    return { jobsAdded, jobsUpdated, setsAdded, setsUpdated, catalogAdded, catalogUpdated };
   }
 
   document.getElementById('backupExportBtn').addEventListener('click', exportBackup);
