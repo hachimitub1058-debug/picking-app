@@ -586,7 +586,7 @@
         parsed.settings = parsed.settings || { vibration: true };
         if(typeof parsed.settings.vibration !== 'boolean') parsed.settings.vibration = true;
         parsed.jobs.forEach(j => { if(j.color === undefined) j.color = null; });
-        if(parsed.jobs.length === 0) parsed.jobs.push(createEmptyJob('本日のピッキング'));
+        if(parsed.jobs.length === 0) parsed.jobs.push(createEmptyJob('新規入力'));
         if(!parsed.activeJobId || !parsed.jobs.some(j => j.id === parsed.activeJobId)){
           parsed.activeJobId = parsed.jobs[0].id;
         }
@@ -604,7 +604,7 @@
         return { jobs: [job], activeJobId: job.id, setLibrary: [], history, trash, settings: { vibration: true } };
       }
     }catch(e){ /* fall through to default */ }
-    const job = createEmptyJob('本日のピッキング');
+    const job = createEmptyJob('新規入力');
     return { jobs: [job], activeJobId: job.id, setLibrary: [], history: [], trash: [], settings: { vibration: true } };
   }
 
@@ -670,7 +670,7 @@
       state.history.unshift({ id: job.id, name: job.name, note: job.note, color: job.color || null, createdAt: job.createdAt, archivedAt: Date.now(), items: job.items });
       state.jobs = state.jobs.filter(j => j.id !== id);
       if(state.jobs.length === 0){
-        const nj = createEmptyJob('本日のピッキング');
+        const nj = createEmptyJob('新規入力');
         state.jobs.push(nj);
         state.activeJobId = nj.id;
       } else if(state.activeJobId === id){
@@ -1531,7 +1531,7 @@
     });
 
     if(state.jobs.length === 0){
-      const nj = createEmptyJob('本日のピッキング');
+      const nj = createEmptyJob('新規入力');
       state.jobs.push(nj);
       state.activeJobId = nj.id;
     } else if(!state.jobs.some(j => j.id === state.activeJobId)){
