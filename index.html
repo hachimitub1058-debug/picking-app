@@ -389,7 +389,7 @@
     <p class="sub" id="setStartSummary"></p>
     <div class="field">
       <label for="setStartNote">備考（任意）</label>
-      <input id="setStartNote" type="text" placeholder="例：〇月〇日" autocomplete="off">
+      <input id="setStartNote" type="text" placeholder="例：整理番号〇〇家" autocomplete="off">
     </div>
     <div class="sheet-actions">
       <button class="btn ghost" id="setStartCancelBtn">キャンセル</button>
@@ -714,7 +714,7 @@
       noteText.textContent = job.note;
       noteText.classList.remove('placeholder');
     } else {
-      noteText.textContent = '備考を追加（例：〇月〇日）';
+      noteText.textContent = '備考を追加（例：整理番号〇〇家）';
       noteText.classList.add('placeholder');
     }
   }
@@ -867,7 +867,7 @@
     const job = activeJob();
     const current = job.note || '';
     row.innerHTML = `
-      <input class="note-input" id="noteInput" type="text" placeholder="例：〇月〇日" value="${escapeHtml(current)}">
+      <input class="note-input" id="noteInput" type="text" placeholder="例：整理番号〇〇家" value="${escapeHtml(current)}">
       <button class="iconbtn" id="noteSaveBtn">${ICONS.check}</button>
     `;
     const input = document.getElementById('noteInput');
